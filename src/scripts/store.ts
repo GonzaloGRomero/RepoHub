@@ -76,8 +76,8 @@ export const STAR_COLORS = [
 export const MOON_COLORS = ['#c8c8d8','#b0c8e0','#e0c8b0','#b0e0c8','#d0b0e0','#e0d0b0'];
 
 export const SIZE_MAP = { small: 28, medium: 42, large: 58 };
-export const BASE_ORBIT = 90;
-export const ORBIT_STEP  = 70;
+export const BASE_ORBIT = 130;
+export const ORBIT_STEP  = 95;
 export const PLANET_SPEEDS = [22, 33, 47, 62, 80, 100, 122, 147, 175, 205];
 
 // ─── STORAGE ───────────────────────────────────────────────────────────────────

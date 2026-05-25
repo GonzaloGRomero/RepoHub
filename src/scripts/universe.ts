@@ -10,7 +10,7 @@
 import {
   loadUniverse, saveUniverse, uid, getScreenshotUrl,
   newPlanet, newSystem,
-  PLANET_TYPES, STAR_COLORS, MOON_COLORS, SIZE_MAP,
+  PLANET_TYPES, STAR_COLORS, MOON_COLORS, SIZE_MAP, BASE_ORBIT, ORBIT_STEP,
   type UniverseData, type StarSystem, type Planet, type Moon,
 } from './store.ts';
 
@@ -72,6 +72,9 @@ let t = 0;
 // Planet axis rotation offsets (per planet id)
 const axisAngles: Map<string, number> = new Map();
 
+// Orbital angle tracking — frozen when planet is hovered
+const orbitCurrentAngles: Map<string, number> = new Map();
+
 // Precomputed screen positions (updated each frame)
 const systemScreenPos: Map<string, { x: number; y: number }> = new Map();
 const planetScreenPos: Map<string, { x: number; y: number }> = new Map();
@@ -115,16 +118,18 @@ const starColorEls = document.getElementById('star-color-presets')!;
 let selectedStarColor = 0;
 
 // Planet Modal
-const pModalOverlay = document.getElementById('planet-modal-overlay')!;
-const pForm      = document.getElementById('planet-form') as HTMLFormElement;
-const pFormId    = document.getElementById('p-form-id') as HTMLInputElement;
-const pFormSysId = document.getElementById('p-form-sys-id') as HTMLInputElement;
-const pFormName  = document.getElementById('p-form-name') as HTMLInputElement;
-const pFormUrl   = document.getElementById('p-form-url') as HTMLInputElement;
-const pFormDesc  = document.getElementById('p-form-desc') as HTMLTextAreaElement;
-const pModalTitle= document.getElementById('planet-modal-title')!;
-const pColorEls  = document.getElementById('planet-color-presets')!;
-const pBtnSaveText = document.getElementById('p-btn-save-text')!;
+const pModalOverlay  = document.getElementById('planet-modal-overlay')!;
+const pForm          = document.getElementById('planet-form') as HTMLFormElement;
+const pFormId        = document.getElementById('p-form-id') as HTMLInputElement;
+const pFormSysId     = document.getElementById('p-form-sys-id') as HTMLInputElement;
+const pFormName      = document.getElementById('p-form-name') as HTMLInputElement;
+const pFormUrl       = document.getElementById('p-form-url') as HTMLInputElement;
+const pFormDesc      = document.getElementById('p-form-desc') as HTMLTextAreaElement;
+const pFormOrbit     = document.getElementById('p-form-orbit') as HTMLInputElement;
+const pOrbitDisplay  = document.getElementById('p-orbit-display')!;
+const pModalTitle    = document.getElementById('planet-modal-title')!;
+const pColorEls      = document.getElementById('planet-color-presets')!;
+const pBtnSaveText   = document.getElementById('p-btn-save-text')!;
 let selectedPlanetColor = 0;
 let editingPlanetId: string | null = null;
 let editingPlanetSysId: string | null = null;
@@ -269,28 +274,37 @@ function renderSystem(): void {
   moonScreenPos.clear();
 
   sys.planets.forEach((planet, idx) => {
-    const elapsed = t / planet.orbitSpeed * Math.PI * 2;
-    const angle   = planet.orbitAngle * Math.PI / 180 + elapsed;
+    const hov = hoveredPlanet === planet;
 
-    // If being dragged, use custom position
+    // ── Orbital angle — freeze completely when hovered ──
+    let angle: number;
+    if (hov) {
+      // Use last saved angle (planet stays still)
+      angle = orbitCurrentAngles.get(planet.id) ?? planet.orbitAngle * Math.PI / 180;
+    } else {
+      const elapsed = t / planet.orbitSpeed * Math.PI * 2;
+      angle = planet.orbitAngle * Math.PI / 180 + elapsed;
+      orbitCurrentAngles.set(planet.id, angle); // save for freeze
+    }
+
+    // If being dragged, override position
     let px: number, py: number;
     if (draggingPlanet === planet) {
-      // Convert mouse to canvas space
       px = (mouseX - cx) / cam.zoom;
       py = (mouseY - cy) / cam.zoom;
-      // Update orbit radius to match drag position
-      planet.orbitRadius = Math.sqrt(px * px + py * py);
+      planet.orbitRadius = Math.max(80, Math.sqrt(px * px + py * py));
     } else {
       px = Math.cos(angle) * planet.orbitRadius;
       py = Math.sin(angle) * planet.orbitRadius;
     }
 
-    // Axis spin
+    // ── Axis spin — also freeze when hovered ──
     let ax = axisAngles.get(planet.id) ?? Math.random() * Math.PI * 2;
-    ax += 0.008 / (planet.size === 'large' ? 1.5 : planet.size === 'small' ? 0.7 : 1);
+    if (!hov) {
+      ax += 0.008 / (planet.size === 'large' ? 1.5 : planet.size === 'small' ? 0.7 : 1);
+    }
     axisAngles.set(planet.id, ax);
 
-    const hov = hoveredPlanet === planet;
     const sc = hov ? 1.18 : 1;
     drawCartoonPlanet(ctx, px, py, planet, ax, hov, sc);
 
@@ -788,16 +802,31 @@ function openPlanetModal(sys: StarSystem, planet?: Planet): void {
   const sizeVal = planet?.size ?? 'medium';
   document.querySelectorAll<HTMLInputElement>('input[name="p-size"]').forEach(r => r.checked = r.value === sizeVal);
 
+  // Orbit slider: default = planet's current radius, or auto-calc for new planet
+  const defaultOrbit = planet?.orbitRadius ?? (BASE_ORBIT + sys.planets.length * ORBIT_STEP);
+  const maxOrbit = Math.max(600, Math.round(defaultOrbit * 1.5));
+  pFormOrbit.min   = '80';
+  pFormOrbit.max   = String(maxOrbit);
+  pFormOrbit.step  = '5';
+  pFormOrbit.value = String(Math.round(defaultOrbit));
+  pOrbitDisplay.textContent = String(Math.round(defaultOrbit));
+
   pModalOverlay.classList.add('open');
   setTimeout(() => pFormName.focus(), 250);
 }
 
+// Live orbit display update
+pFormOrbit.addEventListener('input', () => {
+  pOrbitDisplay.textContent = pFormOrbit.value;
+});
+
 pForm.addEventListener('submit', (e) => {
   e.preventDefault();
-  const name = pFormName.value.trim();
-  const url  = pFormUrl.value.trim();
-  const desc = pFormDesc.value.trim();
-  const size = (document.querySelector<HTMLInputElement>('input[name="p-size"]:checked')?.value ?? 'medium') as Planet['size'];
+  const name        = pFormName.value.trim();
+  const url         = pFormUrl.value.trim();
+  const desc        = pFormDesc.value.trim();
+  const size        = (document.querySelector<HTMLInputElement>('input[name="p-size"]:checked')?.value ?? 'medium') as Planet['size'];
+  const orbitRadius = parseInt(pFormOrbit.value) || (BASE_ORBIT + (activeSystem?.planets.length ?? 0) * ORBIT_STEP);
   if (!name || !url) return;
 
   const sysId = pFormSysId.value;
@@ -809,11 +838,13 @@ pForm.addEventListener('submit', (e) => {
   if (editingPlanetId) {
     const idx = sys.planets.findIndex(p => p.id === editingPlanetId);
     if (idx !== -1) {
-      sys.planets[idx] = { ...sys.planets[idx], name, url, description: desc, size, colorIndex: selectedPlanetColor, screenshot };
+      sys.planets[idx] = { ...sys.planets[idx], name, url, description: desc, size, colorIndex: selectedPlanetColor, screenshot, orbitRadius };
     }
   } else {
-    sys.planets.push(newPlanet(name, url, desc, size, selectedPlanetColor, sys.planets.length));
-    sys.planets[sys.planets.length - 1].screenshot = screenshot;
+    const p = newPlanet(name, url, desc, size, selectedPlanetColor, sys.planets.length);
+    p.orbitRadius = orbitRadius;
+    p.screenshot  = screenshot;
+    sys.planets.push(p);
   }
 
   saveUniverse(universe);
