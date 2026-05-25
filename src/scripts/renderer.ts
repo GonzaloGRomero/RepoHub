@@ -3,7 +3,7 @@
    Draws: space background, black hole, star systems, cartoon planets, moons
    ===================================================================== */
 
-import type { StarSystem, Planet, Moon } from './store.ts';
+import type { StarSystem, Planet, Moon, PlanetStatus } from './store.ts';
 import { PLANET_TYPES, SIZE_MAP } from './store.ts';
 
 // ─── TYPES ─────────────────────────────────────────────────────────────────────
@@ -232,7 +232,8 @@ export function drawCartoonPlanet(
   planet: Planet,
   axisAngle: number,   // rotates the surface bands
   hovered: boolean,
-  scale: number = 1
+  scale: number = 1,
+  t: number = 0        // current time (seconds) for animated status auras
 ): void {
   const r = (SIZE_MAP[planet.size] ?? 42) * scale;
   const pt = PLANET_TYPES[planet.colorIndex % PLANET_TYPES.length];
@@ -335,6 +336,15 @@ export function drawCartoonPlanet(
   // Saturn-style ring for large planets (every 3rd colorIndex)
   if (planet.size === 'large' && planet.colorIndex % 3 === 0) {
     drawPlanetRing(ctx, r, pt.primary);
+  }
+
+  // ─── Status aura ────────────────────────────────────────
+  if (planet.status === 'offline') {
+    drawOfflineAura(ctx, r, t ?? 0);
+  } else if (planet.status === 'checking') {
+    drawCheckingAura(ctx, r, t ?? 0);
+  } else if (planet.status === 'online') {
+    drawOnlineAura(ctx, r);
   }
 
   ctx.restore();
@@ -462,4 +472,66 @@ export function drawMoon(
 
 export function dist(ax: number, ay: number, bx: number, by: number): number {
   return Math.sqrt((ax - bx) ** 2 + (ay - by) ** 2);
+}
+
+// ─── STATUS AURAS ─────────────────────────────────────────────────────────────
+
+function drawOfflineAura(ctx: CanvasRenderingContext2D, r: number, t: number): void {
+  const pulse = 0.5 + 0.5 * Math.abs(Math.sin(t * 2.5));
+  // Outer danger ring
+  ctx.beginPath();
+  ctx.arc(0, 0, r + 7 + pulse * 4, 0, Math.PI * 2);
+  ctx.strokeStyle = `rgba(255,60,80,${0.7 * pulse})`;
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  // Red glow halo
+  const g = ctx.createRadialGradient(0, 0, r, 0, 0, r + 22);
+  g.addColorStop(0,   `rgba(255,40,60,${0.35 * pulse})`);
+  g.addColorStop(0.5, `rgba(255,40,60,${0.12 * pulse})`);
+  g.addColorStop(1,   'rgba(255,40,60,0)');
+  ctx.beginPath();
+  ctx.arc(0, 0, r + 22, 0, Math.PI * 2);
+  ctx.fillStyle = g;
+  ctx.fill();
+  // ⚠ icon
+  ctx.font = `bold ${Math.round(r * 0.45)}px sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.globalAlpha = 0.5 + 0.5 * pulse;
+  ctx.fillStyle = '#ff4060';
+  ctx.fillText('✕', 0, 0);
+  ctx.globalAlpha = 1;
+}
+
+function drawCheckingAura(ctx: CanvasRenderingContext2D, r: number, t: number): void {
+  // Spinning dashed scan ring
+  ctx.save();
+  ctx.rotate(t * 3);
+  ctx.beginPath();
+  ctx.arc(0, 0, r + 10, 0, Math.PI * 2);
+  ctx.strokeStyle = 'rgba(255,210,60,0.7)';
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([6, 5]);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.restore();
+  // Yellow glow
+  const g = ctx.createRadialGradient(0, 0, r, 0, 0, r + 16);
+  g.addColorStop(0,   'rgba(255,200,40,0.2)');
+  g.addColorStop(1,   'rgba(255,200,40,0)');
+  ctx.beginPath();
+  ctx.arc(0, 0, r + 16, 0, Math.PI * 2);
+  ctx.fillStyle = g;
+  ctx.fill();
+}
+
+function drawOnlineAura(ctx: CanvasRenderingContext2D, r: number): void {
+  // Subtle green halo
+  const g = ctx.createRadialGradient(0, 0, r * 0.9, 0, 0, r + 14);
+  g.addColorStop(0,   'rgba(64,255,144,0.18)');
+  g.addColorStop(1,   'rgba(64,255,144,0)');
+  ctx.beginPath();
+  ctx.arc(0, 0, r + 14, 0, Math.PI * 2);
+  ctx.fillStyle = g;
+  ctx.fill();
 }

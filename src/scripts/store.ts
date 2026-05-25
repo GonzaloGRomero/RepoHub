@@ -2,10 +2,24 @@
    store.ts — Universe Data Model & LocalStorage
    ===================================================================== */
 
-export const STORAGE_KEY = 'devhub_universe_v1';
+export const STORAGE_KEY  = 'devhub_universe_v1';
+export const LOGS_KEY     = 'devhub_monitor_logs_v1';
 export const MICROLINK_API = 'https://api.microlink.io';
 
 // ─── TYPES ─────────────────────────────────────────────────────────────────────
+
+export type PlanetStatus = 'online' | 'offline' | 'checking' | 'unknown';
+
+export interface MonitorLog {
+  id: string;
+  timestamp: string;         // ISO string
+  planetId: string;
+  planetName: string;
+  systemName: string;
+  type: 'info' | 'success' | 'warning' | 'error';
+  message: string;
+  responseTime?: number;     // ms
+}
 
 export interface Moon {
   id: string;
@@ -28,6 +42,11 @@ export interface Planet {
   orbitAngle: number;  // starting angle offset (golden angle)
   moons: Moon[];
   createdAt: number;
+  // ─── Monitoring ───────────────────────────────────────────────
+  status: PlanetStatus;
+  responseTime: number;       // ms of last check
+  lastChecked: string;        // ISO string of last check
+  uptimeHistory: boolean[];   // last 20 checks: true=online, false=offline
 }
 
 export interface StarSystem {
@@ -85,12 +104,47 @@ export const PLANET_SPEEDS = [22, 33, 47, 62, 80, 100, 122, 147, 175, 205];
 export function loadUniverse(): UniverseData {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? (JSON.parse(raw) as UniverseData) : { systems: [] };
+    const data = raw ? (JSON.parse(raw) as UniverseData) : { systems: [] };
+    // Migrate old planets that don't have monitoring fields
+    for (const sys of data.systems) {
+      for (const planet of sys.planets) {
+        if (!planet.status)        planet.status = 'unknown';
+        if (!planet.uptimeHistory) planet.uptimeHistory = [];
+        if (!planet.lastChecked)   planet.lastChecked = '';
+        if (planet.responseTime === undefined) planet.responseTime = 0;
+      }
+    }
+    return data;
   } catch { return { systems: [] }; }
 }
 
 export function saveUniverse(data: UniverseData): void {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+}
+
+export function loadLogs(): MonitorLog[] {
+  try {
+    const raw = localStorage.getItem(LOGS_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch { return []; }
+}
+
+export function saveLogs(logs: MonitorLog[]): void {
+  // Keep only the last 200 logs
+  const trimmed = logs.slice(-200);
+  localStorage.setItem(LOGS_KEY, JSON.stringify(trimmed));
+}
+
+export function addLog(log: Omit<MonitorLog, 'id' | 'timestamp'>): MonitorLog {
+  const entry: MonitorLog = {
+    ...log,
+    id: uid(),
+    timestamp: new Date().toISOString(),
+  };
+  const logs = loadLogs();
+  logs.push(entry);
+  saveLogs(logs);
+  return entry;
 }
 
 // ─── HELPERS ───────────────────────────────────────────────────────────────────
@@ -115,6 +169,10 @@ export function newPlanet(name: string, url: string, desc: string, size: Planet[
     orbitAngle: (index * 137.5) % 360,
     moons: [],
     createdAt: Date.now(),
+    status: 'unknown',
+    responseTime: 0,
+    lastChecked: '',
+    uptimeHistory: [],
   };
 }
 

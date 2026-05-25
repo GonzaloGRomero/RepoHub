@@ -1,0 +1,527 @@
+---
+// CommandCenter.astro — Space Command Center HUD Panel
+---
+
+<div class="cc-overlay hidden" id="cc-overlay">
+  <div class="cc-panel" id="cc-panel">
+
+    <!-- Header -->
+    <div class="cc-header">
+      <div class="cc-header-left">
+        <div class="cc-radar-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="12" r="10" stroke="#40ffb0" stroke-width="1.5" opacity="0.4"/>
+            <circle cx="12" cy="12" r="6"  stroke="#40ffb0" stroke-width="1.5" opacity="0.6"/>
+            <circle cx="12" cy="12" r="2"  fill="#40ffb0"/>
+            <line x1="12" y1="12" x2="20" y2="5" stroke="#40ffb0" stroke-width="1.5" class="radar-sweep"/>
+          </svg>
+        </div>
+        <div>
+          <h2 class="cc-title">COMMAND CENTER</h2>
+          <p class="cc-subtitle">Sistema de Monitoreo Estelar v1.0</p>
+        </div>
+      </div>
+      <button class="cc-close" id="cc-close">✕</button>
+    </div>
+
+    <!-- Metrics Row -->
+    <div class="cc-metrics">
+      <div class="cc-metric">
+        <span class="cc-metric-val" id="cc-uptime">—</span>
+        <span class="cc-metric-label">Uptime Global</span>
+      </div>
+      <div class="cc-metric">
+        <span class="cc-metric-val cc-val-green" id="cc-online-count">0</span>
+        <span class="cc-metric-label">Online</span>
+      </div>
+      <div class="cc-metric">
+        <span class="cc-metric-val cc-val-red" id="cc-offline-count">0</span>
+        <span class="cc-metric-label">Offline</span>
+      </div>
+      <div class="cc-metric">
+        <span class="cc-metric-val cc-val-yellow" id="cc-unknown-count">0</span>
+        <span class="cc-metric-label">Sin chequear</span>
+      </div>
+      <div class="cc-metric">
+        <span class="cc-metric-val cc-val-cyan" id="cc-avg-response">—</span>
+        <span class="cc-metric-label">Resp. Promedio</span>
+      </div>
+    </div>
+
+    <!-- Body: project list + terminal -->
+    <div class="cc-body">
+
+      <!-- Left: Project List -->
+      <div class="cc-left">
+        <div class="cc-section-header">
+          <span>PROYECTOS</span>
+          <button class="cc-scan-all" id="cc-scan-all">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M1 4v6h6M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>
+            Escanear Todo
+          </button>
+        </div>
+        <div class="cc-project-list" id="cc-project-list">
+          <p class="cc-empty">No hay proyectos cargados.</p>
+        </div>
+      </div>
+
+      <!-- Right: Terminal -->
+      <div class="cc-right">
+        <div class="cc-section-header">
+          <span>TERMINAL DE LOGS</span>
+          <button class="cc-clear-logs" id="cc-clear-logs">Limpiar</button>
+        </div>
+        <div class="cc-terminal" id="cc-terminal">
+          <p class="cc-term-boot">Iniciando sistema de monitoreo estelar...</p>
+          <p class="cc-term-boot cc-dim">Cargando datos del universo...</p>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Simulation Panel -->
+    <div class="cc-sim-panel">
+      <span class="cc-sim-label">⚡ MODO SIMULACIÓN</span>
+      <span class="cc-sim-desc">Seleccioná un proyecto de la lista y forzá su estado:</span>
+      <div class="cc-sim-controls">
+        <select class="cc-sim-select" id="cc-sim-select">
+          <option value="">— Seleccionar planeta —</option>
+        </select>
+        <button class="cc-sim-btn cc-sim-online" id="cc-sim-online">▶ Simular ONLINE</button>
+        <button class="cc-sim-btn cc-sim-offline" id="cc-sim-offline">✕ Simular OFFLINE</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<style>
+  /* ─── Overlay ─── */
+  .cc-overlay {
+    position: fixed; inset: 0; z-index: 500;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(6px);
+    display: flex; align-items: center; justify-content: center;
+    animation: cc-fade-in 0.25s ease;
+  }
+  .cc-overlay.hidden { display: none; }
+  @keyframes cc-fade-in { from { opacity: 0; } to { opacity: 1; } }
+
+  /* ─── Panel ─── */
+  .cc-panel {
+    width: min(96vw, 1080px);
+    max-height: 88vh;
+    background: rgba(4,10,20,0.96);
+    border: 1px solid rgba(64,255,176,0.2);
+    border-radius: 20px;
+    box-shadow:
+      0 0 80px rgba(64,255,176,0.08),
+      0 0 0 1px rgba(64,255,176,0.05) inset;
+    display: flex; flex-direction: column;
+    overflow: hidden;
+    font-family: 'Space Mono', monospace;
+  }
+
+  /* ─── Header ─── */
+  .cc-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 1.2rem 1.8rem;
+    border-bottom: 1px solid rgba(64,255,176,0.1);
+    background: rgba(0,40,20,0.3);
+  }
+  .cc-header-left { display: flex; align-items: center; gap: 14px; }
+  .cc-radar-icon { display: flex; align-items: center; }
+  .radar-sweep {
+    transform-origin: 12px 12px;
+    animation: radar-rotate 2s linear infinite;
+  }
+  @keyframes radar-rotate { to { transform: rotate(360deg); } }
+
+  .cc-title {
+    font-size: 1rem; font-weight: 700; letter-spacing: 3px;
+    color: #40ffb0; text-shadow: 0 0 12px rgba(64,255,176,0.5);
+    margin: 0;
+  }
+  .cc-subtitle { font-size: 0.65rem; color: rgba(64,255,176,0.45); letter-spacing: 1px; margin: 2px 0 0; }
+
+  .cc-close {
+    background: rgba(255,80,80,0.08); border: 1px solid rgba(255,80,80,0.25);
+    color: rgba(255,80,80,0.8); font-size: 1rem; cursor: pointer;
+    width: 34px; height: 34px; border-radius: 8px;
+    transition: all 0.15s; display: flex; align-items: center; justify-content: center;
+  }
+  .cc-close:hover { background: rgba(255,80,80,0.2); color: #ff5050; }
+
+  /* ─── Metrics ─── */
+  .cc-metrics {
+    display: flex; gap: 0; padding: 0;
+    border-bottom: 1px solid rgba(64,255,176,0.08);
+  }
+  .cc-metric {
+    flex: 1; padding: 1rem 1.2rem;
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    border-right: 1px solid rgba(64,255,176,0.06);
+  }
+  .cc-metric:last-child { border-right: none; }
+  .cc-metric-val {
+    font-size: 1.6rem; font-weight: 700; color: #40ffb0;
+    text-shadow: 0 0 16px rgba(64,255,176,0.5);
+    line-height: 1;
+  }
+  .cc-val-green  { color: #40ff90; text-shadow: 0 0 16px rgba(64,255,144,0.5); }
+  .cc-val-red    { color: #ff4060; text-shadow: 0 0 16px rgba(255,64,96,0.5);  }
+  .cc-val-yellow { color: #ffd040; text-shadow: 0 0 16px rgba(255,208,64,0.5); }
+  .cc-val-cyan   { color: #40d0ff; text-shadow: 0 0 16px rgba(64,208,255,0.5); }
+  .cc-metric-label {
+    font-size: 0.6rem; color: rgba(255,255,255,0.35);
+    letter-spacing: 1.5px; text-transform: uppercase;
+  }
+
+  /* ─── Body ─── */
+  .cc-body {
+    flex: 1; display: flex; min-height: 0; overflow: hidden;
+  }
+
+  /* ─── Section header ─── */
+  .cc-section-header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 0.7rem 1rem; font-size: 0.62rem; letter-spacing: 2px;
+    color: rgba(64,255,176,0.6);
+    border-bottom: 1px solid rgba(64,255,176,0.06);
+    flex-shrink: 0;
+  }
+
+  /* ─── Left: Project list ─── */
+  .cc-left {
+    width: 45%; border-right: 1px solid rgba(64,255,176,0.08);
+    display: flex; flex-direction: column; overflow: hidden;
+  }
+
+  .cc-scan-all {
+    display: flex; align-items: center; gap: 5px;
+    background: rgba(64,255,176,0.08); border: 1px solid rgba(64,255,176,0.2);
+    color: #40ffb0; font-family: 'Space Mono', monospace; font-size: 0.62rem;
+    padding: 4px 10px; border-radius: 4px; cursor: pointer;
+    transition: all 0.15s; letter-spacing: 1px;
+  }
+  .cc-scan-all:hover { background: rgba(64,255,176,0.18); }
+  .cc-scan-all:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .cc-project-list {
+    flex: 1; overflow-y: auto; padding: 0.5rem;
+  }
+  .cc-project-list::-webkit-scrollbar { width: 4px; }
+  .cc-project-list::-webkit-scrollbar-track { background: transparent; }
+  .cc-project-list::-webkit-scrollbar-thumb { background: rgba(64,255,176,0.2); border-radius: 2px; }
+
+  .cc-empty { color: rgba(255,255,255,0.25); font-size: 0.72rem; padding: 1.5rem; text-align: center; }
+
+  /* ─── Project item ─── */
+  .cc-project-item {
+    display: grid; grid-template-columns: 12px 1fr auto auto;
+    align-items: center; gap: 10px;
+    padding: 0.65rem 0.8rem; border-radius: 8px;
+    border: 1px solid transparent;
+    margin-bottom: 4px;
+    transition: all 0.15s;
+    cursor: default;
+  }
+  .cc-project-item:hover { background: rgba(64,255,176,0.04); border-color: rgba(64,255,176,0.1); }
+
+  .cc-status-dot {
+    width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+  }
+  .dot-online   { background: #40ff90; box-shadow: 0 0 8px #40ff90; }
+  .dot-offline  { background: #ff4060; box-shadow: 0 0 8px #ff4060; animation: blink-dot 1.2s ease-in-out infinite; }
+  .dot-checking { background: #ffd040; box-shadow: 0 0 8px #ffd040; animation: pulse-dot 0.8s ease-in-out infinite; }
+  .dot-unknown  { background: rgba(255,255,255,0.2); }
+  @keyframes blink-dot   { 0%,100%{opacity:1} 50%{opacity:0.2} }
+  @keyframes pulse-dot   { 0%,100%{transform:scale(1)} 50%{transform:scale(1.4)} }
+
+  .cc-proj-info { min-width: 0; }
+  .cc-proj-name { font-size: 0.78rem; color: #e0e8f0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cc-proj-sub  { font-size: 0.6rem; color: rgba(255,255,255,0.3); margin-top: 2px; }
+
+  .cc-proj-ms {
+    font-size: 0.65rem; color: rgba(64,255,176,0.7);
+    white-space: nowrap; min-width: 52px; text-align: right;
+  }
+  .cc-proj-ms.slow { color: #ffd040; }
+  .cc-proj-ms.none { color: rgba(255,255,255,0.2); }
+
+  .cc-proj-scan {
+    background: rgba(64,255,176,0.06); border: 1px solid rgba(64,255,176,0.15);
+    color: rgba(64,255,176,0.7); font-size: 0.6rem; padding: 3px 8px;
+    border-radius: 4px; cursor: pointer; font-family: 'Space Mono', monospace;
+    transition: all 0.15s; white-space: nowrap;
+  }
+  .cc-proj-scan:hover { background: rgba(64,255,176,0.15); color: #40ffb0; }
+
+  /* Sparkline */
+  .cc-sparkline {
+    display: flex; gap: 2px; align-items: flex-end;
+    height: 12px; padding-top: 2px;
+  }
+  .cc-spark-dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
+  .cc-spark-dot.on  { background: #40ff90; }
+  .cc-spark-dot.off { background: #ff4060; }
+  .cc-spark-dot.unk { background: rgba(255,255,255,0.15); }
+
+  /* ─── Right: Terminal ─── */
+  .cc-right {
+    flex: 1; display: flex; flex-direction: column; overflow: hidden;
+  }
+
+  .cc-clear-logs {
+    background: transparent; border: 1px solid rgba(255,255,255,0.1);
+    color: rgba(255,255,255,0.3); font-family: 'Space Mono', monospace; font-size: 0.6rem;
+    padding: 3px 8px; border-radius: 4px; cursor: pointer; transition: all 0.15s;
+  }
+  .cc-clear-logs:hover { border-color: rgba(255,80,80,0.4); color: #ff5050; }
+
+  .cc-terminal {
+    flex: 1; overflow-y: auto; padding: 1rem;
+    font-size: 0.71rem; line-height: 1.8;
+    background: rgba(0,8,4,0.4);
+  }
+  .cc-terminal::-webkit-scrollbar { width: 4px; }
+  .cc-terminal::-webkit-scrollbar-track { background: transparent; }
+  .cc-terminal::-webkit-scrollbar-thumb { background: rgba(64,255,176,0.15); border-radius: 2px; }
+
+  .cc-term-boot { color: rgba(64,255,176,0.4); font-size: 0.65rem; }
+  .cc-dim       { color: rgba(255,255,255,0.2); }
+
+  .cc-log-line { display: flex; gap: 8px; margin-bottom: 2px; }
+  .cc-log-time  { color: rgba(255,255,255,0.25); flex-shrink: 0; font-size: 0.65rem; }
+  .cc-log-tag   { flex-shrink: 0; font-weight: 700; font-size: 0.65rem; }
+  .cc-log-msg   { color: rgba(255,255,255,0.6); }
+  .cc-log-planet{ color: rgba(180,220,255,0.8); font-weight: 600; }
+
+  .tag-success { color: #40ff90; }
+  .tag-error   { color: #ff4060; }
+  .tag-warning { color: #ffd040; }
+  .tag-info    { color: #40d0ff; }
+
+  /* ─── Simulation Panel ─── */
+  .cc-sim-panel {
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+    padding: 0.75rem 1.5rem;
+    border-top: 1px solid rgba(255,200,0,0.1);
+    background: rgba(20,15,0,0.3);
+    font-size: 0.65rem;
+  }
+  .cc-sim-label {
+    color: #ffd040; font-weight: 700; letter-spacing: 1.5px; flex-shrink: 0;
+    text-shadow: 0 0 8px rgba(255,208,0,0.4);
+  }
+  .cc-sim-desc { color: rgba(255,255,255,0.3); flex-shrink: 0; }
+
+  .cc-sim-controls { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+
+  .cc-sim-select {
+    background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.12);
+    color: rgba(255,255,255,0.7); font-family: 'Space Mono', monospace; font-size: 0.65rem;
+    padding: 5px 10px; border-radius: 6px; cursor: pointer;
+  }
+  .cc-sim-btn {
+    font-family: 'Space Mono', monospace; font-size: 0.65rem; font-weight: 700;
+    padding: 5px 14px; border-radius: 6px; cursor: pointer; border: none;
+    letter-spacing: 0.5px; transition: all 0.15s;
+  }
+  .cc-sim-online  { background: rgba(64,255,144,0.12); color: #40ff90; border: 1px solid rgba(64,255,144,0.25); }
+  .cc-sim-online:hover  { background: rgba(64,255,144,0.25); }
+  .cc-sim-offline { background: rgba(255,64,96,0.12);  color: #ff4060; border: 1px solid rgba(255,64,96,0.25);  }
+  .cc-sim-offline:hover { background: rgba(255,64,96,0.25); }
+</style>
+
+<script>
+  import { loadUniverse, loadLogs, saveLogs, type MonitorLog, type PlanetStatus } from '../scripts/store.ts';
+  import { checkPlanet, checkAllPlanets, simulateStatus, startMonitoring } from '../scripts/monitoring.ts';
+
+  const overlay    = document.getElementById('cc-overlay')!;
+  const btnClose   = document.getElementById('cc-close')!;
+  const btnScanAll = document.getElementById('cc-scan-all') as HTMLButtonElement;
+  const btnClear   = document.getElementById('cc-clear-logs')!;
+  const terminal   = document.getElementById('cc-terminal')!;
+  const projList   = document.getElementById('cc-project-list')!;
+  const simSelect  = document.getElementById('cc-sim-select') as HTMLSelectElement;
+  const simOnline  = document.getElementById('cc-sim-online')!;
+  const simOffline = document.getElementById('cc-sim-offline')!;
+
+  // ─── Open / Close ──────────────────────────────────────────────
+  (window as any).openCommandCenter = function() {
+    overlay.classList.remove('hidden');
+    renderAll();
+  };
+  btnClose.addEventListener('click', () => overlay.classList.add('hidden'));
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.classList.add('hidden'); });
+
+  // ─── Render helpers ───────────────────────────────────────────
+  function fmtTime(iso: string): string {
+    if (!iso) return '--:--:--';
+    const d = new Date(iso);
+    return d.toLocaleTimeString('es-AR', { hour12: false });
+  }
+
+  function tagClass(type: MonitorLog['type']): string {
+    return { success: 'tag-success', error: 'tag-error', warning: 'tag-warning', info: 'tag-info' }[type];
+  }
+  function tagLabel(type: MonitorLog['type']): string {
+    return { success: '[OK]', error: '[ERR]', warning: '[WARN]', info: '[INFO]' }[type];
+  }
+
+  function dotClass(status: PlanetStatus): string {
+    return { online: 'dot-online', offline: 'dot-offline', checking: 'dot-checking', unknown: 'dot-unknown' }[status];
+  }
+
+  function renderTerminal(): void {
+    const logs = loadLogs().slice(-80).reverse(); // newest first
+    terminal.innerHTML = logs.length === 0
+      ? '<p class="cc-term-boot">Sin eventos registrados aún.</p>'
+      : logs.map(l => `
+          <div class="cc-log-line">
+            <span class="cc-log-time">${fmtTime(l.timestamp)}</span>
+            <span class="cc-log-tag ${tagClass(l.type)}">${tagLabel(l.type)}</span>
+            <span class="cc-log-planet">[${l.systemName}] ${l.planetName}</span>
+            <span class="cc-log-msg">→ ${l.message}</span>
+          </div>
+        `).join('');
+  }
+
+  function renderProjects(): void {
+    const data = loadUniverse();
+    const allPlanets = data.systems.flatMap(s => s.planets.map(p => ({ planet: p, system: s })));
+
+    // Update simulation select
+    simSelect.innerHTML = '<option value="">— Seleccionar planeta —</option>' +
+      allPlanets.map(({ planet }) =>
+        `<option value="${planet.id}">${planet.name}</option>`
+      ).join('');
+
+    if (allPlanets.length === 0) {
+      projList.innerHTML = '<p class="cc-empty">No hay proyectos cargados.</p>';
+      return;
+    }
+
+    projList.innerHTML = allPlanets.map(({ planet, system }) => {
+      const msLabel = planet.status === 'unknown' || planet.status === 'checking' || !planet.lastChecked
+        ? ''
+        : `${planet.responseTime}ms`;
+      const msCls = planet.responseTime > 500 ? 'slow' : planet.status === 'unknown' ? 'none' : '';
+      const hist = (planet.uptimeHistory ?? []).slice(-15);
+
+      const sparkHtml = hist.length > 0
+        ? `<div class="cc-sparkline">${hist.map(ok =>
+            `<div class="cc-spark-dot ${ok ? 'on' : 'off'}"></div>`
+          ).join('')}</div>`
+        : '';
+
+      const sub = planet.lastChecked
+        ? `Último chequeo: ${fmtTime(planet.lastChecked)}`
+        : `Sin chequear · ${system.name}`;
+
+      return `
+        <div class="cc-project-item" data-pid="${planet.id}">
+          <div class="cc-status-dot ${dotClass(planet.status)}"></div>
+          <div class="cc-proj-info">
+            <div class="cc-proj-name">${planet.name}</div>
+            <div class="cc-proj-sub">${sub}</div>
+            ${sparkHtml}
+          </div>
+          <span class="cc-proj-ms ${msCls}">${msLabel}</span>
+          <button class="cc-proj-scan" data-pid="${planet.id}" data-sys="${system.name}">Scan</button>
+        </div>
+      `;
+    }).join('');
+
+    // Scan individual
+    projList.querySelectorAll('.cc-proj-scan').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const pid = (btn as HTMLElement).dataset.pid!;
+        const sys = (btn as HTMLElement).dataset.sys!;
+        const data2 = loadUniverse();
+        for (const s of data2.systems) {
+          const p = s.planets.find(pl => pl.id === pid);
+          if (p) {
+            btn.textContent = '...';
+            (btn as HTMLButtonElement).disabled = true;
+            await checkPlanet(p, sys);
+            const { saveUniverse } = await import('../scripts/store.ts');
+            saveUniverse(data2);
+            renderAll();
+            break;
+          }
+        }
+      });
+    });
+  }
+
+  function renderMetrics(): void {
+    const data = loadUniverse();
+    const allPlanets = data.systems.flatMap(s => s.planets);
+
+    const online  = allPlanets.filter(p => p.status === 'online').length;
+    const offline = allPlanets.filter(p => p.status === 'offline').length;
+    const unknown = allPlanets.filter(p => p.status === 'unknown' || p.status === 'checking').length;
+
+    const totalChecked = allPlanets.filter(p => p.uptimeHistory && p.uptimeHistory.length > 0);
+    const uptimePct = totalChecked.length === 0 ? '—' : (() => {
+      const total = totalChecked.reduce((s, p) => s + p.uptimeHistory.length, 0);
+      const good  = totalChecked.reduce((s, p) => s + p.uptimeHistory.filter(Boolean).length, 0);
+      return `${Math.round((good / total) * 100)}%`;
+    })();
+
+    const respondingPlanets = allPlanets.filter(p => p.status === 'online' && p.responseTime > 0);
+    const avgMs = respondingPlanets.length === 0 ? '—' :
+      `${Math.round(respondingPlanets.reduce((s, p) => s + p.responseTime, 0) / respondingPlanets.length)}ms`;
+
+    document.getElementById('cc-uptime')!.textContent         = uptimePct;
+    document.getElementById('cc-online-count')!.textContent   = String(online);
+    document.getElementById('cc-offline-count')!.textContent  = String(offline);
+    document.getElementById('cc-unknown-count')!.textContent  = String(unknown);
+    document.getElementById('cc-avg-response')!.textContent   = avgMs;
+  }
+
+  function renderAll(): void {
+    renderMetrics();
+    renderProjects();
+    renderTerminal();
+  }
+
+  // ─── Scan all ─────────────────────────────────────────────────
+  btnScanAll.addEventListener('click', async () => {
+    btnScanAll.disabled = true;
+    btnScanAll.textContent = 'Escaneando...';
+    await checkAllPlanets();
+    renderAll();
+    btnScanAll.disabled = false;
+    btnScanAll.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M1 4v6h6M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/></svg> Escanear Todo`;
+  });
+
+  // ─── Clear logs ───────────────────────────────────────────────
+  btnClear.addEventListener('click', () => {
+    saveLogs([]);
+    renderTerminal();
+  });
+
+  // ─── Simulation ───────────────────────────────────────────────
+  simOnline.addEventListener('click',  () => {
+    if (!simSelect.value) return;
+    simulateStatus(simSelect.value, 'online');
+    renderAll();
+  });
+  simOffline.addEventListener('click', () => {
+    if (!simSelect.value) return;
+    simulateStatus(simSelect.value, 'offline');
+    renderAll();
+  });
+
+  // ─── Live updates via custom events ───────────────────────────
+  window.addEventListener('planet-status-update', () => {
+    if (!overlay.classList.contains('hidden')) renderAll();
+  });
+
+  // ─── Start monitoring engine ───────────────────────────────────
+  startMonitoring();
+</script>

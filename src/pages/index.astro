@@ -6,6 +6,7 @@ import SystemModal from '../components/SystemModal.astro';
 import PlanetModal from '../components/PlanetModal.astro';
 import MoonModal from '../components/MoonModal.astro';
 import UniverseContextMenu from '../components/UniverseContextMenu.astro';
+import CommandCenter from '../components/CommandCenter.astro';
 ---
 
 <Layout title="Dev Universe — Hub de Proyectos">
@@ -16,8 +17,65 @@ import UniverseContextMenu from '../components/UniverseContextMenu.astro';
   <PlanetModal />
   <MoonModal />
   <UniverseContextMenu />
+  <CommandCenter />
+
+  <!-- Command Center trigger button -->
+  <button class="cc-trigger" id="cc-trigger" title="Centro de Comando">
+    <span class="cc-trigger-radar"></span>
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+      <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" opacity="0.5"/>
+      <circle cx="12" cy="12" r="5"  stroke="currentColor" stroke-width="2" opacity="0.7"/>
+      <circle cx="12" cy="12" r="1.5" fill="currentColor"/>
+      <line x1="12" y1="12" x2="20" y2="5" stroke="currentColor" stroke-width="1.5" class="cc-trigger-sweep"/>
+    </svg>
+    <span>COMMAND CENTER</span>
+  </button>
 </Layout>
 
 <script>
   import '../scripts/universe.ts';
+
+  document.getElementById('cc-trigger')?.addEventListener('click', () => {
+    (window as any).openCommandCenter?.();
+  });
 </script>
+
+<style>
+  .cc-trigger {
+    position: fixed; bottom: 1.4rem; right: 1.4rem; z-index: 200;
+    display: flex; align-items: center; gap: 9px;
+    background: rgba(4,10,20,0.85);
+    border: 1px solid rgba(64,255,176,0.3);
+    color: #40ffb0;
+    font-family: 'Space Mono', monospace; font-size: 0.68rem; font-weight: 700;
+    letter-spacing: 1.5px;
+    padding: 10px 18px 10px 14px;
+    border-radius: 50px;
+    cursor: pointer;
+    backdrop-filter: blur(12px);
+    box-shadow: 0 0 24px rgba(64,255,176,0.12), 0 2px 16px rgba(0,0,0,0.5);
+    transition: all 0.2s ease;
+    position: fixed;
+  }
+  .cc-trigger:hover {
+    background: rgba(4,20,12,0.92);
+    border-color: rgba(64,255,176,0.6);
+    box-shadow: 0 0 40px rgba(64,255,176,0.25), 0 2px 20px rgba(0,0,0,0.5);
+    transform: translateY(-2px);
+  }
+  .cc-trigger-radar {
+    position: absolute; inset: 0; border-radius: 50px;
+    pointer-events: none;
+    animation: radar-ping 2.5s ease-out infinite;
+    border: 1px solid rgba(64,255,176,0.4);
+  }
+  @keyframes radar-ping {
+    0%   { transform: scale(1);   opacity: 0.5; }
+    100% { transform: scale(1.18); opacity: 0; }
+  }
+  .cc-trigger-sweep {
+    transform-origin: 12px 12px;
+    animation: sweep-rotate 2s linear infinite;
+  }
+  @keyframes sweep-rotate { to { transform: rotate(360deg); } }
+</style>
