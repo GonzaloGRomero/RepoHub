@@ -1,0 +1,110 @@
+---
+// SystemModal.astro — Create / Edit a Star System (category)
+---
+
+<div class="modal-overlay" id="system-modal-overlay" role="dialog" aria-modal="true">
+  <div class="modal">
+    <button class="modal-close" id="sys-modal-close" aria-label="Cerrar">✕</button>
+    <h2 class="modal-title" id="system-modal-title">Nuevo Sistema Estelar</h2>
+
+    <form id="system-form" autocomplete="off" novalidate>
+      <input type="hidden" id="sys-form-id" />
+
+      <div class="form-group">
+        <label for="sys-form-name">Nombre del sistema <span class="req">*</span></label>
+        <input type="text" id="sys-form-name" placeholder="Frontend, Backend, APIs..." required maxlength="25" />
+      </div>
+
+      <div class="form-group">
+        <label for="sys-form-desc">Descripción</label>
+        <textarea id="sys-form-desc" placeholder="Categoría de proyectos..." rows="2" maxlength="120"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label>Color de la estrella central</label>
+        <div class="star-color-presets" id="star-color-presets"></div>
+      </div>
+
+      <div class="form-actions">
+        <button type="button" class="btn-cancel" id="sys-btn-cancel">Cancelar</button>
+        <button type="submit" class="btn-save">Crear Sistema ✦</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<style>
+  .modal-overlay {
+    position: fixed; inset: 0; z-index: 300;
+    background: rgba(0,0,0,0.78); backdrop-filter: blur(8px);
+    display: flex; align-items: center; justify-content: center; padding: 1rem;
+    opacity: 0; pointer-events: none; transition: opacity 0.25s ease;
+  }
+  .modal-overlay.open { opacity: 1; pointer-events: all; }
+
+  .modal {
+    position: relative; background: #0a051a;
+    border: 1px solid rgba(201,122,255,0.25); border-radius: 22px;
+    padding: 2rem; width: 100%; max-width: 460px;
+    transform: translateY(30px) scale(0.95);
+    transition: transform 0.35s cubic-bezier(0.34,1.56,0.64,1);
+    box-shadow: 0 40px 100px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.04);
+  }
+  .modal-overlay.open .modal { transform: translateY(0) scale(1); }
+
+  .modal-close {
+    position: absolute; top: 1rem; right: 1rem;
+    background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+    color: rgba(255,255,255,0.5); width: 32px; height: 32px; border-radius: 50%;
+    cursor: pointer; font-size: .85rem; display: flex; align-items: center; justify-content: center;
+    transition: all .2s ease;
+  }
+  .modal-close:hover { color: #fff; background: rgba(255,255,255,0.12); }
+
+  .modal-title { font-size: 1.3rem; font-weight: 700; margin-bottom: 1.5rem; padding-right: 2.5rem; color: #fff; }
+
+  .form-group { margin-bottom: 1.1rem; }
+  .form-group label {
+    display: block; font-size: .78rem; font-weight: 600;
+    color: rgba(255,255,255,0.45); text-transform: uppercase; letter-spacing: .8px; margin-bottom: .5rem;
+  }
+  .req { color: #c97aff; }
+  .form-group input, .form-group textarea {
+    width: 100%; background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.1); border-radius: 10px;
+    padding: 11px 14px; color: #e8e4f0;
+    font-family: 'Outfit', sans-serif; font-size: .92rem;
+    transition: all .2s ease; outline: none; resize: vertical;
+  }
+  .form-group input:focus, .form-group textarea:focus {
+    border-color: rgba(201,122,255,0.5);
+    background: rgba(201,122,255,0.05);
+    box-shadow: 0 0 0 3px rgba(201,122,255,0.12);
+  }
+
+  :global(.star-color-presets) { display: flex; flex-wrap: wrap; gap: 10px; }
+  :global(.star-preset) {
+    width: 36px; height: 36px; border-radius: 50%; cursor: pointer;
+    border: 3px solid transparent; transition: transform .2s ease, border-color .2s ease; outline: none;
+  }
+  :global(.star-preset:hover) { transform: scale(1.2); }
+  :global(.star-preset.selected) { border-color: #fff; box-shadow: 0 0 0 2px rgba(255,255,255,0.4); }
+
+  .form-actions { display: flex; gap: 10px; margin-top: 1.5rem; }
+  .btn-cancel {
+    flex: 1; padding: 11px; background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1); color: rgba(255,255,255,0.55);
+    border-radius: 10px; font-family: 'Outfit', sans-serif; font-size: .9rem;
+    font-weight: 600; cursor: pointer; transition: all .2s ease;
+  }
+  .btn-cancel:hover { background: rgba(255,255,255,0.1); color: #fff; }
+  .btn-save {
+    flex: 2; padding: 11px;
+    background: linear-gradient(135deg, #6020d0, #c97aff);
+    border: none; color: #fff; border-radius: 10px;
+    font-family: 'Outfit', sans-serif; font-size: .9rem; font-weight: 700;
+    cursor: pointer; transition: all .2s ease;
+    box-shadow: 0 4px 20px rgba(201,122,255,0.3);
+  }
+  .btn-save:hover { transform: translateY(-1px); box-shadow: 0 6px 28px rgba(201,122,255,0.5); }
+</style>

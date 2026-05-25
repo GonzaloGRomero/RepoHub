@@ -1,19 +1,23 @@
 ---
 import Layout from '../layouts/Layout.astro';
-import SolarSystem from '../components/SolarSystem.astro';
-import AddModal from '../components/AddModal.astro';
-import Tooltip from '../components/Tooltip.astro';
-import ContextMenu from '../components/ContextMenu.astro';
+import UniverseHUD from '../components/UniverseHUD.astro';
+import UniverseTooltip from '../components/UniverseTooltip.astro';
+import SystemModal from '../components/SystemModal.astro';
+import PlanetModal from '../components/PlanetModal.astro';
+import MoonModal from '../components/MoonModal.astro';
+import UniverseContextMenu from '../components/UniverseContextMenu.astro';
 ---
 
-<Layout title="Dev Hub — Sistema Solar de Proyectos">
-  <SolarSystem />
-  <Tooltip />
-  <AddModal />
-  <ContextMenu />
+<Layout title="Dev Universe — Hub de Proyectos">
+  <canvas id="universe-canvas"></canvas>
+  <UniverseHUD />
+  <UniverseTooltip />
+  <SystemModal />
+  <PlanetModal />
+  <MoonModal />
+  <UniverseContextMenu />
 </Layout>
 
-<!-- Astro script tag: bundled automatically as a module -->
 <script>
-  import '../scripts/main.ts';
+  import '../scripts/universe.ts';
 </script>
