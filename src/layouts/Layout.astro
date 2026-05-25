@@ -1,0 +1,91 @@
+---
+interface Props {
+  title: string;
+}
+const { title } = Astro.props;
+---
+
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{title}</title>
+    <meta name="description" content="Hub personal de proyectos de programación, visualizado como un sistema solar interactivo." />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+  </head>
+  <body>
+    <canvas id="stars-canvas"></canvas>
+    <slot />
+  </body>
+</html>
+
+<style is:global>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:         #03010a;
+    --surface:    rgba(255,255,255,0.04);
+    --surface-2:  rgba(255,255,255,0.09);
+    --border:     rgba(255,255,255,0.10);
+    --text:       #e8e4f0;
+    --text-muted: #7a7490;
+    --accent:     #c97aff;
+    --accent-2:   #7affde;
+    --danger:     #ff6b6b;
+    --font-main:  'Outfit', sans-serif;
+    --font-mono:  'Space Mono', monospace;
+    --radius:     14px;
+    --ease:       cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: var(--font-main);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow: hidden;
+    position: relative;
+  }
+
+  /* ── Scrollbar ── */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(201,122,255,0.3); border-radius: 3px; }
+
+  /* ── Stars canvas ── */
+  #stars-canvas {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  /* ── Btn ── */
+  .btn-add {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    background: linear-gradient(135deg, #8b3dff, #c97aff);
+    color: #fff;
+    border: none;
+    border-radius: 50px;
+    font-family: var(--font-main);
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.25s var(--ease), box-shadow 0.25s var(--ease);
+    box-shadow: 0 0 20px rgba(201,122,255,0.3);
+  }
+
+  .btn-add:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0 30px rgba(201,122,255,0.55);
+  }
+</style>

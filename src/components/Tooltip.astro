@@ -1,0 +1,94 @@
+---
+// Tooltip.astro — hover card shown near planets
+---
+
+<div class="planet-tooltip" id="planet-tooltip" role="tooltip" aria-live="polite">
+  <div class="tooltip-preview">
+    <img id="tooltip-img" src="" alt="Preview del proyecto" />
+    <div class="tooltip-skeleton" id="tooltip-skeleton">
+      <div class="sk-line sk-w60"></div>
+      <div class="sk-line sk-w40"></div>
+    </div>
+    <div class="tooltip-no-img" id="tooltip-no-img">Sin preview</div>
+  </div>
+  <div class="tooltip-info">
+    <h3 id="tooltip-name"></h3>
+    <p  id="tooltip-desc"></p>
+    <span class="tooltip-link">🔗 Abrir proyecto →</span>
+  </div>
+</div>
+
+<style>
+  .planet-tooltip {
+    position: fixed; z-index: 200;
+    width: 290px;
+    background: rgba(8,4,22,0.96);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    box-shadow: 0 24px 60px rgba(0,0,0,.75), 0 0 0 1px rgba(201,122,255,.15);
+    pointer-events: none;
+    opacity: 0;
+    transform: translateY(10px) scale(0.96);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    backdrop-filter: blur(24px);
+  }
+  .planet-tooltip.visible {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+
+  /* Preview area */
+  .tooltip-preview {
+    width: 100%; height: 150px;
+    background: rgba(255,255,255,.03);
+    position: relative; overflow: hidden;
+  }
+  .tooltip-preview img {
+    width: 100%; height: 100%; object-fit: cover;
+    display: none;
+    transition: opacity 0.3s ease;
+  }
+  .tooltip-preview img.loaded { display: block; opacity: 1; }
+
+  /* Loading skeleton */
+  .tooltip-skeleton {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column;
+    justify-content: center; gap: 10px;
+    padding: 20px;
+  }
+  .tooltip-skeleton.hidden { display: none; }
+  .sk-line {
+    height: 10px; border-radius: 6px;
+    background: linear-gradient(90deg, rgba(255,255,255,.05) 25%, rgba(255,255,255,.12) 50%, rgba(255,255,255,.05) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.4s infinite;
+  }
+  .sk-w60 { width: 60%; }
+  .sk-w40 { width: 40%; }
+  @keyframes shimmer {
+    0%   { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+
+  .tooltip-no-img {
+    position: absolute; inset: 0;
+    display: none; align-items: center; justify-content: center;
+    color: var(--text-muted); font-size: .8rem; font-family: var(--font-mono);
+  }
+  .tooltip-no-img.visible { display: flex; }
+
+  /* Info */
+  .tooltip-info { padding: 14px 16px 16px; }
+  .tooltip-info h3 {
+    font-size: 1rem; font-weight: 700; margin-bottom: 5px; color: #fff;
+  }
+  .tooltip-info p {
+    font-size: .82rem; color: var(--text-muted);
+    line-height: 1.5; margin-bottom: 10px; min-height: 20px;
+  }
+  .tooltip-link {
+    font-size: .75rem; color: var(--accent); font-family: var(--font-mono);
+  }
+</style>

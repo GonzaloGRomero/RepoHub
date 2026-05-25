@@ -1,0 +1,187 @@
+---
+// AddModal.astro — form to add/edit projects
+---
+
+<div class="modal-overlay" id="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+  <div class="modal">
+    <button class="modal-close" id="modal-close" aria-label="Cerrar modal">✕</button>
+    <h2 class="modal-title" id="modal-title">Nuevo Proyecto</h2>
+
+    <form id="project-form" autocomplete="off" novalidate>
+      <input type="hidden" id="form-id" />
+
+      <div class="form-group">
+        <label for="form-name">Nombre del proyecto <span class="req">*</span></label>
+        <input type="text" id="form-name" placeholder="Mi Portfolio" required maxlength="30" />
+      </div>
+
+      <div class="form-group">
+        <label for="form-url">URL (GitHub Pages) <span class="req">*</span></label>
+        <input type="url" id="form-url" placeholder="https://usuario.github.io/proyecto" required />
+        <small id="url-hint">La screenshot se genera automáticamente al guardar</small>
+      </div>
+
+      <div class="form-group">
+        <label for="form-desc">Descripción</label>
+        <textarea id="form-desc" placeholder="Breve descripción del proyecto..." rows="3" maxlength="150"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label>Color del planeta</label>
+        <div class="color-presets" id="color-presets"></div>
+      </div>
+
+      <div class="form-group">
+        <label>Tamaño del planeta</label>
+        <div class="size-options">
+          <label class="size-opt">
+            <input type="radio" name="planet-size" value="small" />
+            <span class="size-visual size-small"></span>
+            <span>Pequeño</span>
+          </label>
+          <label class="size-opt">
+            <input type="radio" name="planet-size" value="medium" checked />
+            <span class="size-visual size-medium"></span>
+            <span>Mediano</span>
+          </label>
+          <label class="size-opt">
+            <input type="radio" name="planet-size" value="large" />
+            <span class="size-visual size-large"></span>
+            <span>Grande</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button type="button" class="btn-cancel" id="btn-cancel">Cancelar</button>
+        <button type="submit" class="btn-save" id="btn-save">
+          <span id="btn-save-text">Agregar Planeta</span>
+          <svg id="btn-spinner" class="spinner hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="16" height="16">
+            <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+          </svg>
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<style>
+  .modal-overlay {
+    position: fixed; inset: 0; z-index: 300;
+    background: rgba(0,0,0,.75); backdrop-filter: blur(6px);
+    display: flex; align-items: center; justify-content: center;
+    padding: 1rem;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.25s ease;
+  }
+  .modal-overlay.open { opacity: 1; pointer-events: all; }
+
+  .modal {
+    position: relative;
+    background: #0d0820;
+    border: 1px solid rgba(201,122,255,.25);
+    border-radius: 20px;
+    padding: 2rem;
+    width: 100%; max-width: 480px;
+    max-height: 90vh; overflow-y: auto;
+    transform: translateY(28px) scale(0.96);
+    transition: transform 0.32s cubic-bezier(0.34,1.56,0.64,1);
+    box-shadow: 0 40px 100px rgba(0,0,0,.65), 0 0 0 1px rgba(255,255,255,.05);
+  }
+  .modal-overlay.open .modal { transform: translateY(0) scale(1); }
+
+  .modal-close {
+    position: absolute; top: 1rem; right: 1rem;
+    background: var(--surface); border: 1px solid var(--border);
+    color: var(--text-muted); width: 32px; height: 32px;
+    border-radius: 50%; cursor: pointer; font-size: .85rem;
+    display: flex; align-items: center; justify-content: center;
+    transition: all .2s ease;
+  }
+  .modal-close:hover { color: var(--text); background: var(--surface-2); }
+
+  .modal-title { font-size: 1.35rem; font-weight: 700; margin-bottom: 1.5rem; padding-right: 2rem; }
+
+  /* Form */
+  .form-group { margin-bottom: 1.1rem; }
+  .form-group label {
+    display: block; font-size: .82rem; font-weight: 600;
+    color: var(--text-muted); text-transform: uppercase;
+    letter-spacing: .8px; margin-bottom: .5rem;
+  }
+  .req { color: var(--accent); }
+  .form-group input[type="text"],
+  .form-group input[type="url"],
+  .form-group textarea {
+    width: 100%; background: var(--surface);
+    border: 1px solid var(--border); border-radius: 10px;
+    padding: 12px 14px; color: var(--text);
+    font-family: var(--font-main); font-size: .92rem;
+    transition: all .2s ease; outline: none; resize: vertical;
+  }
+  .form-group input:focus, .form-group textarea:focus {
+    border-color: rgba(201,122,255,.5);
+    background: rgba(201,122,255,.05);
+    box-shadow: 0 0 0 3px rgba(201,122,255,.1);
+  }
+  .form-group small { display: block; margin-top: 5px; font-size: .75rem; color: var(--text-muted); }
+
+  /* Colors */
+  .color-presets { display: flex; flex-wrap: wrap; gap: 10px; }
+  :global(.color-preset) {
+    width: 36px; height: 36px; border-radius: 50%; cursor: pointer;
+    border: 3px solid transparent;
+    transition: transform .2s ease, border-color .2s ease;
+    outline: none;
+  }
+  :global(.color-preset:hover)    { transform: scale(1.18); }
+  :global(.color-preset.selected) { border-color: #fff; box-shadow: 0 0 0 2px rgba(255,255,255,.4); }
+
+  /* Sizes */
+  .size-options { display: flex; gap: 1.2rem; }
+  .size-opt {
+    display: flex; flex-direction: column; align-items: center;
+    gap: 6px; cursor: pointer; font-size: .78rem; color: var(--text-muted);
+  }
+  .size-opt input[type="radio"] { display: none; }
+  .size-visual {
+    border-radius: 50%; background: rgba(201,122,255,.3);
+    border: 2px solid rgba(201,122,255,.4); display: block;
+    transition: all .2s ease;
+  }
+  .size-small  { width: 22px; height: 22px; }
+  .size-medium { width: 32px; height: 32px; }
+  .size-large  { width: 44px; height: 44px; }
+  .size-opt input:checked ~ .size-visual {
+    background: rgba(201,122,255,.6);
+    border-color: var(--accent);
+    box-shadow: 0 0 12px rgba(201,122,255,.5);
+  }
+  .size-opt input:checked ~ span:last-child { color: var(--text); }
+
+  /* Actions */
+  .form-actions { display: flex; gap: 12px; margin-top: 1.5rem; }
+  .btn-cancel {
+    flex: 1; padding: 12px;
+    background: var(--surface); border: 1px solid var(--border);
+    color: var(--text-muted); border-radius: 10px;
+    font-family: var(--font-main); font-size: .92rem; font-weight: 600;
+    cursor: pointer; transition: all .2s ease;
+  }
+  .btn-cancel:hover { background: var(--surface-2); color: var(--text); }
+  .btn-save {
+    flex: 2; padding: 12px;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    background: linear-gradient(135deg,#8b3dff,#c97aff);
+    border: none; color: #fff; border-radius: 10px;
+    font-family: var(--font-main); font-size: .92rem; font-weight: 700;
+    cursor: pointer; transition: all .2s ease;
+    box-shadow: 0 4px 20px rgba(201,122,255,.3);
+  }
+  .btn-save:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 28px rgba(201,122,255,.5); }
+  .btn-save:disabled { opacity: .6; cursor: not-allowed; }
+
+  .spinner { animation: spin 0.8s linear infinite; }
+  .spinner.hidden { display: none; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>

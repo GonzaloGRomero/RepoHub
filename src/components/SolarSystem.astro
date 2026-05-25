@@ -1,0 +1,239 @@
+---
+// SolarSystem.astro — header + solar system wrapper + empty state
+---
+
+<header class="site-header">
+  <div class="header-inner">
+    <div class="logo">
+      <span class="logo-icon">✦</span>
+      <span class="logo-text">Dev<span class="accent">Hub</span></span>
+    </div>
+    <nav class="header-nav">
+      <span class="planet-count" id="planet-count">0 proyectos</span>
+      <button class="btn-add" id="btn-open-modal">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <line x1="12" y1="5" x2="12" y2="19"/>
+          <line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+        Nuevo Proyecto
+      </button>
+    </nav>
+  </div>
+</header>
+
+<main class="solar-system-wrapper">
+  <div class="solar-system" id="solar-system">
+    <!-- Sun -->
+    <div class="sun-container">
+      <div class="sun-glow"></div>
+      <div class="sun">
+        <span class="sun-label">Dev<br/>Hub</span>
+      </div>
+    </div>
+    <!-- Orbits injected by JS -->
+    <div id="orbits-container"></div>
+  </div>
+
+  <!-- Empty state -->
+  <div class="empty-state" id="empty-state">
+    <p class="empty-icon">🚀</p>
+    <h2>El universo está vacío</h2>
+    <p>Agrega tu primer proyecto para que orbite el sistema.</p>
+    <button class="btn-add" id="btn-empty-add" style="margin-top:1.5rem">+ Agregar Proyecto</button>
+  </div>
+</main>
+
+<style>
+  /* ─── Header ─── */
+  .site-header {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    background: rgba(3,1,10,0.7);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+  }
+  .header-inner {
+    max-width: 1400px; margin: 0 auto;
+    padding: 0 2rem; height: 64px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .logo {
+    display: flex; align-items: center; gap: 10px;
+    font-family: var(--font-mono); font-size: 1.25rem; font-weight: 700;
+  }
+  .logo-icon {
+    color: var(--accent); font-size: 1.4rem;
+    animation: pulse-star 3s ease-in-out infinite;
+  }
+  @keyframes pulse-star {
+    0%,100% { opacity: 1; transform: scale(1); }
+    50%      { opacity: 0.6; transform: scale(0.85); }
+  }
+  .accent { color: var(--accent); }
+  .header-nav { display: flex; align-items: center; gap: 1.2rem; }
+  .planet-count { font-size: 0.8rem; color: var(--text-muted); font-family: var(--font-mono); }
+
+  /* ─── Wrapper ─── */
+  .solar-system-wrapper {
+    position: relative; z-index: 1;
+    width: 100vw; height: 100vh;
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden;
+  }
+  .solar-system {
+    position: relative;
+    width: min(900px, 90vw); height: min(900px, 90vw);
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  /* ─── Sun ─── */
+  .sun-container {
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%,-50%); z-index: 10;
+  }
+  .sun-glow {
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%,-50%);
+    width: 140px; height: 140px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(255,220,50,.6) 0%, rgba(255,140,0,.2) 50%, transparent 70%);
+    animation: sun-pulse 4s ease-in-out infinite;
+    pointer-events: none;
+  }
+  @keyframes sun-pulse {
+    0%,100% { transform: translate(-50%,-50%) scale(1); opacity:.8; }
+    50%      { transform: translate(-50%,-50%) scale(1.15); opacity:1; }
+  }
+  .sun {
+    position: relative; width: 80px; height: 80px; border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, #fff8c0 0%,#ffde3a 30%,#ff9500 65%,#ff5500 100%);
+    box-shadow: 0 0 30px rgba(255,200,0,.9), 0 0 60px rgba(255,150,0,.6), 0 0 100px rgba(255,100,0,.3);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .sun-label {
+    font-family: var(--font-mono); font-size: .55rem; font-weight: 700;
+    color: rgba(80,30,0,.9); text-align: center; line-height: 1.3;
+    letter-spacing: .5px; text-transform: uppercase; pointer-events: none;
+  }
+
+  /* ─── Orbits & Planets ─── */
+  :global(.orbit) {
+    position: absolute; top: 50%; left: 50%;
+    border-radius: 50%;
+    border: 1px solid rgba(255,255,255,0.06);
+    transform: translate(-50%,-50%);
+    animation: orbit-spin linear infinite;
+  }
+  @keyframes orbit-spin {
+    from { transform: translate(-50%,-50%) rotate(0deg); }
+    to   { transform: translate(-50%,-50%) rotate(360deg); }
+  }
+
+  /* KEY FIX: pause orbit + counter-spin when planet hovered */
+  :global(.orbit:has(.planet:hover)) {
+    animation-play-state: paused !important;
+  }
+  :global(.orbit:has(.planet:hover) .planet) {
+    animation-play-state: paused !important;
+    scale: 1.35;
+    filter: brightness(1.2);
+  }
+
+  :global(.planet-wrapper) {
+    position: absolute; top: 0; left: 50%;
+    transform-origin: bottom center;
+    display: flex; align-items: flex-start; justify-content: center;
+  }
+  :global(.planet) {
+    border-radius: 50%; cursor: pointer; position: relative;
+    transition: filter 0.2s ease, scale 0.2s ease;
+    animation: counter-spin linear infinite;
+  }
+  :global(.planet:hover) { cursor: pointer; }
+
+  /* 3D Sphere Body (Mask) */
+  :global(.planet-body) {
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    border-radius: 50%;
+    overflow: hidden;
+    z-index: 1;
+    transition: box-shadow 0.2s ease;
+  }
+
+  /* Spherical shadow/highlight overlay */
+  :global(.planet-body::after) {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    border-radius: 50%;
+    /* Strong shadow at bottom-right, clean highlight at top-left for 3D realism */
+    background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.2) 0%, rgba(0,0,0,0) 45%, rgba(0,0,0,0.85) 90%);
+    pointer-events: none;
+    z-index: 3;
+  }
+
+  /* Rotating texture */
+  :global(.planet-texture) {
+    position: absolute; top: 0; left: 0;
+    width: 200%; height: 100%;
+    background-size: 50% 100%;
+    background-repeat: repeat-x;
+    animation: planet-spin-axis linear infinite;
+    z-index: 2;
+  }
+
+  /* KEY FIX: pause texture spin on hover as well */
+  :global(.orbit:has(.planet:hover) .planet-texture) {
+    animation-play-state: paused !important;
+  }
+
+  @keyframes counter-spin {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(-360deg); }
+  }
+
+  @keyframes planet-spin-axis {
+    from { transform: translateX(0); }
+    to   { transform: translateX(-50%); }
+  }
+
+  :global(.planet--small)  { width: 36px; height: 36px; }
+  :global(.planet--medium) { width: 52px; height: 52px; }
+  :global(.planet--large)  { width: 70px; height: 70px; }
+
+  :global(.planet-ring) {
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%,-50%) rotateX(70deg);
+    border-radius: 50%;
+    border: 3px solid rgba(255,255,255,.25);
+    pointer-events: none;
+  }
+  :global(.planet-label) {
+    position: absolute; bottom: -22px; left: 50%;
+    transform: translateX(-50%);
+    font-size: .64rem; font-family: var(--font-mono);
+    color: rgba(255,255,255,.7);
+    white-space: nowrap; pointer-events: none; letter-spacing: .5px;
+  }
+
+  /* ─── Empty state ─── */
+  .empty-state {
+    display: none; flex-direction: column; align-items: center; text-align: center;
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, calc(-50% + 60px));
+    animation: float 4s ease-in-out infinite;
+  }
+  .empty-state.visible { display: flex; }
+  @keyframes float {
+    0%,100% { transform: translate(-50%, calc(-50% + 60px)); }
+    50%      { transform: translate(-50%, calc(-50% + 48px)); }
+  }
+  .empty-icon { font-size: 3.5rem; margin-bottom: 1rem; }
+  .empty-state h2 { font-size: 1.4rem; font-weight: 600; margin-bottom: .5rem; }
+  .empty-state p  { color: var(--text-muted); font-size: .9rem; }
+
+  @media (max-width: 600px) {
+    .header-inner { padding: 0 1rem; }
+    .planet-count { display: none; }
+  }
+</style>
